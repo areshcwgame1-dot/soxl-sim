@@ -1,0 +1,37 @@
+name: Kani verification
+on:
+  workflow_dispatch:
+
+jobs:
+  kani:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        harness:
+          - civil_from_days_is_valid_and_invertible
+          - days_from_civil_then_back
+          - weekday_in_range_and_advances
+          - parse_ymd_accepts_only_real_dates
+          - parse_ymd_any_length_never_panics
+          - ladder_reason_is_consistent_for_all_inputs
+          - window_take_profit_semantics
+          - nothing_fires_before_time_stop_date
+          - atr_never_fires_at_new_high
+          - classify_hold_total_and_consistent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-kani
+            ~/.cargo/bin/kani
+            ~/.kani
+          key: kani-0.68.0
+      - name: Install Kani
+        run: |
+          cargo kani --version 2>/dev/null || (cargo install --locked kani-verifier --version 0.68.0 && cargo kani setup)
+      - name: Verify ${{ matrix.harness }}
+        run: cargo kani --harness ${{ matrix.harness }} 2>&1 | tail -30
