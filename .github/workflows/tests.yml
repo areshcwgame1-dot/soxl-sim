@@ -1,0 +1,14 @@
+name: Tests
+on:
+  push:
+    paths: ["main.rs", "Cargo.toml"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --release   # 應顯示 14 passed
