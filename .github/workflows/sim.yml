@@ -1,0 +1,45 @@
+name: Daily SOXL MC sim
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"      # UTC 22:30（冬令；3 月夏令後改 21:30）
+  workflow_dispatch:
+  push:
+    paths: ["config.txt", "main.rs"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sim
+  cancel-in-progress: false
+
+jobs:
+  sim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - name: Update close prices
+        if: github.event_name != 'push'
+        run: |
+          pip install -q yfinance
+          python scripts/update_close.py
+
+      - name: Build and run
+        run: |
+          rustc --edition 2024 -O main.rs -o sim
+          mkdir -p docs
+          ./sim --config config.txt --out docs/index.html --no-heavy > docs/out.txt
+          ./sim --config config.txt --replay --replay-out docs/replay.csv --no-heavy > /dev/null
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add config.txt docs/
+          git diff --staged --quiet || git commit -m "chore: update $(date -u +%F)"
+          git pull --rebase
+          git push
