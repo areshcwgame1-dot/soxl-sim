@@ -1439,14 +1439,15 @@ fn rep_heatmap(results: &[Res], ctx: &Ctx) -> ReportOut {
             "{{type:'scatter',mode:'lines+markers+text',x:{},y:{},text:{},textposition:['top left','top right','bottom left','bottom right'],textfont:{{size:12}},cliponaxis:false,line:{{color:'black',width:3}},marker:{{symbol:'diamond',size:12,color:'white',line:{{color:'black',width:2}}}},name:'實際收盤'}}",
             js_strs(&ax), js_nums(&ay), js_strs(&at)));
     }
-    let title = format!("{}條{} MC模擬（起點為最新實際收盤 ${:.2}）：IV {:.0}%｜{}個逐日格點｜情境分類", results.len(), ctx.label, ctx.s0, iv_avg * 100.0, lab.len());
+    // 標題分兩行，避免窄螢幕（iPad 直向）被截斷；圖例固定在容器底部，底邊距留足
+    let title = format!("{}條{} MC模擬（起點為最新實際收盤 ${:.2}）<br>IV {:.0}%｜{}個逐日格點｜情境分類", results.len(), ctx.label, ctx.s0, iv_avg * 100.0, lab.len());
     let layout = format!(
-        "{{title:{{text:{},font:{{size:16}}}},xaxis:{{type:'category',categoryorder:'array',categoryarray:X,tickmode:'array',tickvals:{},ticktext:{},tickangle:-45}},yaxis:{{title:'標的股價 ($)',range:[{},{}]}},margin:{{t:60,r:30,b:70,l:60}},legend:{{orientation:'h',x:0,y:-0.18,yanchor:'top',font:{{size:12}}}}}}",
+        "{{title:{{text:{},font:{{size:14}},x:0.02,xanchor:'left',y:0.99,yanchor:'top'}},xaxis:{{type:'category',categoryorder:'array',categoryarray:X,tickmode:'array',tickvals:{},ticktext:{},tickangle:-45,automargin:true}},yaxis:{{title:'標的股價 ($)',range:[{},{}],automargin:true}},margin:{{t:80,r:20,b:210,l:60}},legend:{{orientation:'h',x:0,xanchor:'left',yref:'container',y:0.005,yanchor:'bottom',font:{{size:11}}}}}}",
         js_str(&title), js_strs(&tickvals), js_strs(&tickvals), y_lo, y_hi);
     let mut html = String::new();
-    write!(html, "<!doctype html><html><head><meta charset=\"utf-8\"><title>{}</title>\
+    write!(html, "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{}</title>\
 <script src=\"https://cdn.plot.ly/plotly-2.35.2.min.js\"></script></head><body style=\"margin:0\">\
-<div id=\"p\" style=\"width:100%;height:96vh\"></div><script>\
+<div id=\"p\" style=\"width:100%;height:860px;height:max(100dvh,860px)\"></div><script>\
 const X={xs},Y={ys},Z={zjs};\nPlotly.newPlot('p',[{}],{},{{responsive:true}});</script></body></html>",
         ctx.label, tr.join(",\n"), layout).unwrap();
     ReportOut { out: Output::Html(html), publish_tp: None }
